@@ -78,6 +78,16 @@ async function confirmDelete() {
 }
 
 async function toggleStatus(u: User) {
+  const isBlocking = u.status === 'active'
+  const { isConfirmed } = await Swal.fire({
+    title: isBlocking ? `Block ${u.full_name}?` : `Unblock ${u.full_name}?`,
+    text: isBlocking ? 'They will not be able to log in.' : 'Their access will be restored.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: isBlocking ? 'Block' : 'Unblock',
+    confirmButtonColor: isBlocking ? '#dc2626' : '#16a34a',
+  })
+  if (!isConfirmed) return
   await usersApi.toggleStatus(u.id)
   load()
 }
@@ -172,7 +182,7 @@ const roles: User['role'][] = ['super_admin', 'admin', 'manager', 'inventory_man
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {{ editUser ? 'Edit User' : 'Create User' }}
         </h3>
-        <form class="space-y-4" @submit.prevent="save">
+        <form class="space-y-4" autocomplete="off" @submit.prevent="save">
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name</label>
@@ -185,7 +195,7 @@ const roles: User['role'][] = ['super_admin', 'admin', 'manager', 'inventory_man
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-            <input v-model="form.email" type="email" required class="input-field" />
+            <input v-model="form.email" type="email" required autocomplete="new-password" class="input-field" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mobile</label>

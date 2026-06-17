@@ -44,6 +44,9 @@ const router = createRouter({
     { path: '/register', name: 'register', component: () => import('@/pages/auth/RegisterPage.vue'), meta: { guestOnly: true } },
     { path: '/forgot-password', name: 'forgot-password', component: () => import('@/pages/auth/ForgotPasswordPage.vue'), meta: { guestOnly: true } },
 
+    { path: '/privacy', name: 'privacy', component: () => import('@/pages/legal/PrivacyPage.vue') },
+    { path: '/terms', name: 'terms', component: () => import('@/pages/legal/TermsPage.vue') },
+
     // Catch-all
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

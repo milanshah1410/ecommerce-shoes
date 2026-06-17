@@ -7,12 +7,14 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { productApi } from '@/api/product'
 import { useCartStore } from '@/stores/cart'
 import { useWishlistStore } from '@/stores/wishlist'
+import { useAuthStore } from '@/stores/auth'
 import type { Product, ProductVariant, ProductImage, Review } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const cartStore = useCartStore()
 const wishlistStore = useWishlistStore()
+const authStore = useAuthStore()
 
 const loading = ref(true)
 const addingToCart = ref(false)
@@ -82,12 +84,27 @@ function isSizeInStock(size: string): boolean {
 }
 
 function selectColor(variant: ProductVariant) {
+  const previousSize = selectedSize.value
   selectedVariant.value = variant
-  selectedSize.value = null
+  // Bug #10: only reset size if it's unavailable for the new color
+  if (previousSize) {
+    const variants: ProductVariant[] = (product.value as any)?.variants ?? []
+    const stillAvailable = variants.some(
+      v => v.size === previousSize && v.color === variant.color && (v.stock ?? 0) > 0
+    )
+    if (!stillAvailable) selectedSize.value = null
+  }
 }
 
-function selectSize(size: string) {
-  if (!isSizeInStock(size)) return
+async function selectSize(size: string) {
+  if (!isSizeInStock(size)) {
+    // Bug #17: show feedback instead of silently ignoring click
+    await Swal.fire({
+      toast: true, position: 'top-end', icon: 'warning',
+      title: `Size ${size} is out of stock`, timer: 2500, showConfirmButton: false,
+    })
+    return
+  }
   selectedSize.value = size
 }
 
@@ -108,6 +125,17 @@ function getVariantForSelection(): ProductVariant | null {
 }
 
 async function addToCart() {
+  if (!authStore.token) {
+    await Swal.fire({
+      icon: 'info',
+      title: 'Login required',
+      text: 'Please log in to add items to your cart.',
+      confirmButtonText: 'Log In',
+      confirmButtonColor: 'var(--color-brand-600, #7c3aed)',
+    })
+    router.push({ name: 'login', query: { redirect: route.fullPath } })
+    return
+  }
   if (!selectedSize.value && availableSizes.value.length > 0) {
     await Swal.fire({
       icon: 'warning',
@@ -142,7 +170,18 @@ async function addToCart() {
   }
 }
 
-function toggleWishlist() {
+async function toggleWishlist() {
+  if (!authStore.token) {
+    await Swal.fire({
+      icon: 'info',
+      title: 'Login required',
+      text: 'Please log in to save items to your wishlist.',
+      confirmButtonText: 'Log In',
+      confirmButtonColor: 'var(--color-brand-600, #7c3aed)',
+    })
+    router.push({ name: 'login', query: { redirect: route.fullPath } })
+    return
+  }
   if (!product.value) return
   wishlistStore.toggle(product.value)
 }
@@ -176,6 +215,17 @@ async function fetchProduct() {
 }
 
 async function submitReview() {
+  if (!authStore.token) {
+    await Swal.fire({
+      icon: 'info',
+      title: 'Login required',
+      text: 'Please log in to submit a review.',
+      confirmButtonText: 'Log In',
+      confirmButtonColor: 'var(--color-brand-600, #7c3aed)',
+    })
+    router.push({ name: 'login', query: { redirect: route.fullPath } })
+    return
+  }
   if (reviewForm.rating === 0) {
     await Swal.fire({ icon: 'warning', title: 'Rate the product', text: 'Please select a star rating.' })
     return
@@ -319,13 +369,13 @@ function filledStars(rating: number) {
             <!-- Price -->
             <div class="flex items-baseline gap-3">
               <span class="text-3xl font-bold text-gray-900">
-                ${{ (product as any).sale_price ?? product.price }}
+                ₹{{ ((product as any).sale_price ?? product.price)?.toLocaleString('en-IN') }}
               </span>
               <span
                 v-if="(product as any).sale_price && (product as any).sale_price < product.price"
                 class="text-lg text-gray-400 line-through"
               >
-                ${{ product.price }}
+                ₹{{ product.price?.toLocaleString('en-IN') }}
               </span>
             </div>
 

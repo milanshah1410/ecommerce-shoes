@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import type { Product } from '@/types'
 import { useCartStore } from '@/stores/cart'
 import { useWishlistStore } from '@/stores/wishlist'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{ product: Product }>()
 
 const router = useRouter()
 const cart = useCartStore()
 const wishlist = useWishlistStore()
+const auth = useAuthStore()
 
 const addingToCart = ref(false)
 
@@ -19,6 +22,15 @@ function goToProduct() {
 
 async function addToCart(e: Event) {
   e.stopPropagation()
+  if (!auth.token) {
+    await Swal.fire({
+      icon: 'info', title: 'Login required',
+      text: 'Please log in to add items to your cart.',
+      confirmButtonText: 'Log In', confirmButtonColor: 'var(--color-brand-600, #7c3aed)',
+    })
+    router.push({ name: 'login' })
+    return
+  }
   if (addingToCart.value) return
   addingToCart.value = true
   try {
@@ -30,6 +42,15 @@ async function addToCart(e: Event) {
 
 async function toggleWishlist(e: Event) {
   e.stopPropagation()
+  if (!auth.token) {
+    await Swal.fire({
+      icon: 'info', title: 'Login required',
+      text: 'Please log in to save items to your wishlist.',
+      confirmButtonText: 'Log In', confirmButtonColor: 'var(--color-brand-600, #7c3aed)',
+    })
+    router.push({ name: 'login' })
+    return
+  }
   await wishlist.toggle(props.product)
 }
 </script>

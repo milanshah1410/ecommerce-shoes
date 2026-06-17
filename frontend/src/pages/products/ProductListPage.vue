@@ -19,10 +19,12 @@ const sidebarOpen = ref(false)
 const filters = reactive({
   search: (route.query.search as string) || '',
   gender: (route.query.gender as string) || 'all',
+  brand: (route.query.brand as string) || '',
   priceMin: route.query.price_min ? Number(route.query.price_min) : undefined as number | undefined,
   priceMax: route.query.price_max ? Number(route.query.price_max) : undefined as number | undefined,
   rating: (route.query.rating as string) || 'any',
   onSale: route.query.on_sale === '1',
+  trending: route.query.trending === '1',
   sort: (route.query.sort as string) || 'newest',
   page: route.query.page ? Number(route.query.page) : 1,
 })
@@ -30,11 +32,14 @@ const filters = reactive({
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 const searchInput = ref(filters.search)
 
+// Bug #5: live search — debounce then auto-fetch
 watch(searchInput, (val) => {
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
   searchDebounceTimer = setTimeout(() => {
     filters.search = val
     filters.page = 1
+    syncUrl()
+    fetchProducts()
   }, 400)
 })
 
@@ -64,32 +69,43 @@ const activeChips = computed(() => {
   const chips: { key: string; label: string }[] = []
   if (filters.search) chips.push({ key: 'search', label: `Search: "${filters.search}"` })
   if (filters.gender !== 'all') chips.push({ key: 'gender', label: `Gender: ${filters.gender}` })
-  if (filters.priceMin !== undefined) chips.push({ key: 'priceMin', label: `Min: $${filters.priceMin}` })
-  if (filters.priceMax !== undefined) chips.push({ key: 'priceMax', label: `Max: $${filters.priceMax}` })
+  if (filters.brand) chips.push({ key: 'brand', label: `Brand: ${filters.brand}` })
+  if (filters.priceMin !== undefined) chips.push({ key: 'priceMin', label: `Min: ₹${filters.priceMin.toLocaleString('en-IN')}` })
+  if (filters.priceMax !== undefined) chips.push({ key: 'priceMax', label: `Max: ₹${filters.priceMax.toLocaleString('en-IN')}` })
   if (filters.rating !== 'any') chips.push({ key: 'rating', label: `Rating: ${filters.rating}+` })
   if (filters.onSale) chips.push({ key: 'onSale', label: 'On Sale' })
+  if (filters.trending) chips.push({ key: 'trending', label: 'Trending' })
   return chips
 })
 
 function removeChip(key: string) {
   if (key === 'search') { filters.search = ''; searchInput.value = '' }
   else if (key === 'gender') filters.gender = 'all'
+  else if (key === 'brand') filters.brand = ''
   else if (key === 'priceMin') filters.priceMin = undefined
   else if (key === 'priceMax') filters.priceMax = undefined
   else if (key === 'rating') filters.rating = 'any'
   else if (key === 'onSale') filters.onSale = false
+  else if (key === 'trending') filters.trending = false
   filters.page = 1
+  syncUrl()
+  fetchProducts()
 }
 
+// Bug #6: clearFilters must sync URL and re-fetch
 function clearFilters() {
   filters.search = ''
   searchInput.value = ''
   filters.gender = 'all'
+  filters.brand = ''
   filters.priceMin = undefined
   filters.priceMax = undefined
   filters.rating = 'any'
   filters.onSale = false
+  filters.trending = false
   filters.page = 1
+  syncUrl()
+  fetchProducts()
 }
 
 function applyFilters() {
@@ -103,10 +119,12 @@ function syncUrl() {
   const query: Record<string, string> = {}
   if (filters.search) query.search = filters.search
   if (filters.gender !== 'all') query.gender = filters.gender
+  if (filters.brand) query.brand = filters.brand
   if (filters.priceMin !== undefined) query.price_min = String(filters.priceMin)
   if (filters.priceMax !== undefined) query.price_max = String(filters.priceMax)
   if (filters.rating !== 'any') query.rating = filters.rating
   if (filters.onSale) query.on_sale = '1'
+  if (filters.trending) query.trending = '1'
   if (filters.sort !== 'newest') query.sort = filters.sort
   if (filters.page > 1) query.page = String(filters.page)
   router.replace({ query })
@@ -121,10 +139,12 @@ async function fetchProducts() {
     }
     if (filters.search) params.search = filters.search
     if (filters.gender !== 'all') params.gender = filters.gender
-    if (filters.priceMin !== undefined) params.price_min = filters.priceMin
-    if (filters.priceMax !== undefined) params.price_max = filters.priceMax
+    if (filters.brand) params.brand = filters.brand
+    if (filters.priceMin !== undefined) params.min_price = filters.priceMin
+    if (filters.priceMax !== undefined) params.max_price = filters.priceMax
     if (filters.rating !== 'any') params.rating = filters.rating
     if (filters.onSale) params.on_sale = 1
+    if (filters.trending) params.trending = 1
 
     const { data: res } = await productApi.list(params)
     products.value = res.data
@@ -144,6 +164,27 @@ watch(
     filters.page = 1
     syncUrl()
     fetchProducts()
+  }
+)
+
+// Bug #14: re-sync when navigated here from outside (navbar search, nav links, etc.)
+watch(
+  () => route.query as Record<string, string>,
+  (q) => {
+    const newSearch = (q.search as string) || ''
+    const newGender = (q.gender as string) || 'all'
+    const newBrand = (q.brand as string) || ''
+    const newOnSale = q.on_sale === '1'
+    const newTrending = q.trending === '1'
+    const newSort = (q.sort as string) || 'newest'
+    let changed = false
+    if (newSearch !== filters.search) { filters.search = newSearch; searchInput.value = newSearch; changed = true }
+    if (newGender !== filters.gender) { filters.gender = newGender; changed = true }
+    if (newBrand !== filters.brand) { filters.brand = newBrand; changed = true }
+    if (newOnSale !== filters.onSale) { filters.onSale = newOnSale; changed = true }
+    if (newTrending !== filters.trending) { filters.trending = newTrending; changed = true }
+    if (newSort !== filters.sort) { filters.sort = newSort; changed = true }
+    if (changed) { filters.page = 1; fetchProducts() }
   }
 )
 
@@ -313,13 +354,13 @@ onMounted(() => {
         <!-- Main content -->
         <main class="flex-1 min-w-0">
           <!-- Sort bar -->
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4 relative z-10">
             <p class="text-sm text-gray-600 hidden lg:block">
               Showing <span class="font-semibold text-gray-900">{{ totalCount }}</span> results
             </p>
             <div class="flex items-center gap-2">
               <label class="text-sm text-gray-600 whitespace-nowrap">Sort by:</label>
-              <select v-model="filters.sort" class="input text-sm py-1.5">
+              <select v-model="filters.sort" class="input text-sm py-1.5" @click.stop>
                 <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
                   {{ opt.label }}
                 </option>

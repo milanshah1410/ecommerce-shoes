@@ -18,9 +18,9 @@ const searchQuery = ref('')
 const navLinks: { label: string; to: string; query?: Record<string, string> }[] = [
   { label: 'Home', to: '/' },
   { label: 'Products', to: '/products' },
-  { label: 'Men', to: '/products', query: { gender: 'male' } },
-  { label: 'Women', to: '/products', query: { gender: 'female' } },
-  { label: 'Sale', to: '/products', query: { sale: '1' } },
+  { label: 'Men', to: '/products', query: { gender: 'men' } },
+  { label: 'Women', to: '/products', query: { gender: 'women' } },
+  { label: 'Sale', to: '/products', query: { on_sale: '1' } },
 ]
 
 function isActive(link: { to: string; query?: Record<string, string> }) {

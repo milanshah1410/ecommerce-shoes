@@ -100,7 +100,11 @@ async function save() {
   saving.value = true
   try {
     const fd = new FormData()
-    Object.entries(form).forEach(([k, v]) => fd.append(k, String(v)))
+    Object.entries(form).forEach(([k, v]) => {
+      // FormData converts everything to strings; PHP boolean validation only accepts 1/0
+      if (typeof v === 'boolean') fd.append(k, v ? '1' : '0')
+      else if (v !== null && v !== undefined && v !== '') fd.append(k, String(v))
+    })
     variants.value.forEach((v, i) => {
       fd.append(`variants[${i}][size]`, v.size)
       fd.append(`variants[${i}][color]`, v.color)
@@ -117,8 +121,11 @@ async function save() {
     Swal.fire({ icon: 'success', title: 'Product saved!', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 })
     router.push({ name: 'products' })
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { message?: string } } }
-    Swal.fire({ icon: 'error', title: err.response?.data?.message ?? 'Error saving product.' })
+    const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }
+    const msg = err.response?.data?.errors
+      ? Object.values(err.response.data.errors).flat().join('\n')
+      : (err.response?.data?.message ?? 'Error saving product.')
+    Swal.fire({ icon: 'error', title: 'Validation Error', text: msg })
   } finally {
     saving.value = false
   }

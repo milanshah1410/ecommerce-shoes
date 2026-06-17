@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
+import Swal from 'sweetalert2'
 import {
   LayoutDashboard, Users, ShieldCheck, Package, Tags, Award,
   Warehouse, ShoppingCart, Ticket, UserCircle, Star, BarChart3,
@@ -17,6 +18,7 @@ const settingsStore = useSettingsStore()
 
 const sidebarOpen = ref(true)
 const userMenuOpen = ref(false)
+const notificationsOpen = ref(false)
 const searchQuery = ref('')
 const mobileOpen = ref(false)
 
@@ -25,6 +27,16 @@ onMounted(() => {
 })
 
 async function handleLogout() {
+  const { isConfirmed } = await Swal.fire({
+    title: 'Log out?',
+    text: 'You will be signed out of the admin panel.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Log Out',
+    confirmButtonColor: '#dc2626',
+    cancelButtonText: 'Cancel',
+  })
+  if (!isConfirmed) return
   await auth.logout()
   router.push({ name: 'login' })
 }
@@ -104,6 +116,19 @@ const navGroups: NavGroup[] = [
 
 function isActive(name: string): boolean {
   return route.name === name || String(route.name).startsWith(name + '.')
+}
+
+// Bug #10: global search — route to products or users depending on query
+function handleSearch() {
+  const q = searchQuery.value.trim()
+  if (!q) return
+  // Route to products search by default; prefix with '@' to search users
+  if (q.startsWith('@')) {
+    router.push({ name: 'users', query: { search: q.slice(1) } })
+  } else {
+    router.push({ name: 'products', query: { search: q } })
+  }
+  searchQuery.value = ''
 }
 </script>
 
@@ -222,8 +247,9 @@ function isActive(name: string): boolean {
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search..."
+              placeholder="Search products… (@ for users)"
               class="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-gray-200"
+              @keyup.enter="handleSearch"
             />
           </div>
         </div>
@@ -238,10 +264,29 @@ function isActive(name: string): boolean {
           </button>
 
           <!-- Notifications -->
-          <button class="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400">
-            <Bell class="w-5 h-5" />
-            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-          </button>
+          <div class="relative">
+            <button
+              class="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400"
+              @click="notificationsOpen = !notificationsOpen"
+            >
+              <Bell class="w-5 h-5" />
+              <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+            </button>
+            <div
+              v-if="notificationsOpen"
+              v-click-outside="() => (notificationsOpen = false)"
+              class="absolute right-0 mt-1 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
+            >
+              <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <span class="text-sm font-semibold text-gray-800 dark:text-white">Notifications</span>
+                <span class="text-xs text-indigo-600 cursor-pointer hover:underline" @click="notificationsOpen = false">Dismiss</span>
+              </div>
+              <div class="px-4 py-6 text-center">
+                <Bell class="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p class="text-sm text-gray-400 dark:text-gray-500">No new notifications</p>
+              </div>
+            </div>
+          </div>
 
           <!-- Profile dropdown -->
           <div class="relative">

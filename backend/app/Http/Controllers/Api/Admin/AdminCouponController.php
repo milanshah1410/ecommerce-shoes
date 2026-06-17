@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -32,7 +33,11 @@ class AdminCouponController extends Controller
 
         $data['code'] = strtoupper($data['code']);
 
-        return response()->json(Coupon::create($data), 201);
+        try {
+            return response()->json(Coupon::create($data), 201);
+        } catch (QueryException $e) {
+            return response()->json(['message' => 'Could not save coupon. Please check your inputs and try again.'], 422);
+        }
     }
 
     public function update(Request $request, Coupon $coupon)

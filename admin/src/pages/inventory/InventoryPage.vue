@@ -52,6 +52,7 @@ async function submitStock() {
     else await inventoryApi.adjust({ variant_id: variant.id, new_stock: stockForm.new_stock, note: stockForm.note })
     stockModal.value = null
     loadLowStock()
+    loadMovements()
     Swal.fire({ icon: 'success', title: 'Stock updated!', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 })
   } catch (e: unknown) {
     const err = e as { response?: { data?: { message?: string } } }

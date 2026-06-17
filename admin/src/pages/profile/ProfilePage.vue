@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import PageHeader from '@/components/common/PageHeader.vue'
@@ -10,11 +10,29 @@ const auth = useAuthStore()
 const saving = ref(false)
 
 const form = reactive({
-  first_name: auth.user?.first_name ?? '',
-  last_name: auth.user?.last_name ?? '',
-  email: auth.user?.email ?? '',
-  mobile: auth.user?.mobile ?? '',
+  first_name: '',
+  last_name: '',
+  email: '',
+  mobile: '',
 })
+
+function populateForm() {
+  if (!auth.user) return
+  Object.assign(form, {
+    first_name: auth.user.first_name ?? '',
+    last_name: auth.user.last_name ?? '',
+    email: auth.user.email ?? '',
+    mobile: (auth.user as any).mobile ?? '',
+  })
+}
+
+// Bug #5: user may not be loaded yet when this page mounts
+onMounted(async () => {
+  if (!auth.user) await auth.fetchUser()
+  populateForm()
+})
+
+watch(() => auth.user, populateForm)
 
 const passwordForm = reactive({ current_password: '', password: '', password_confirmation: '' })
 const savingPass = ref(false)

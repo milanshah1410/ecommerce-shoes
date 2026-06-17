@@ -48,13 +48,26 @@ function openEdit(c: Coupon) {
 async function save() {
   saving.value = true
   try {
-    if (editItem.value) await couponsApi.update(editItem.value.id, form)
-    else await couponsApi.create(form)
+    // Sanitize optional numeric fields — send null instead of '' to avoid SQL type errors
+    const payload = {
+      ...form,
+      code: (form.code ?? '').toUpperCase(),
+      min_order_amount: form.min_order_amount || null,
+      max_discount: form.max_discount || null,
+      usage_limit: form.usage_limit || null,
+      start_date: form.start_date || null,
+      end_date: form.end_date || null,
+    }
+    if (editItem.value) await couponsApi.update(editItem.value.id, payload)
+    else await couponsApi.create(payload)
     showForm.value = false; load()
     Swal.fire({ icon: 'success', title: 'Saved!', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 })
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { message?: string } } }
-    Swal.fire({ icon: 'error', title: err.response?.data?.message ?? 'Error.' })
+    const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }
+    const msg = err.response?.data?.errors
+      ? Object.values(err.response.data.errors).flat().join('\n')
+      : (err.response?.data?.message ?? 'An error occurred.')
+    Swal.fire({ icon: 'error', title: 'Validation Error', text: msg })
   } finally { saving.value = false }
 }
 
@@ -109,7 +122,7 @@ async function confirmDelete() {
         <form class="space-y-4" @submit.prevent="save">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Code</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Code <span class="text-red-500">*</span></label>
               <input v-model="form.code" type="text" required class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono uppercase" style="text-transform: uppercase" />
             </div>
             <div>

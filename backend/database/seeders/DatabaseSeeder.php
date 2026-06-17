@@ -104,7 +104,7 @@ class DatabaseSeeder extends Seeder
             ['Blue', '#2563eb'], ['Grey', '#6b7280'], ['Green', '#16a34a'],
         ];
         $sizes = ['6', '7', '8', '9', '10', '11'];
-        $genders = ['men', 'women', 'unisex', 'kids'];
+        $genders = ['men', 'women', 'unisex'];
 
         foreach ($models as $i => $name) {
             $brand = $brands[$i % count($brands)];
@@ -136,7 +136,7 @@ class DatabaseSeeder extends Seeder
             for ($img = 0; $img < 3; $img++) {
                 ProductImage::create([
                     'product_id' => $product->id,
-                    'image' => "https://picsum.photos/seed/prod{$i}-{$img}/800/800",
+                    'image' => $this->shoeImageUrl($i * 3 + $img),
                     'is_primary' => $img === 0,
                     'sort_order' => $img,
                 ]);
@@ -182,6 +182,34 @@ class DatabaseSeeder extends Seeder
             ]);
             $product->update(['rating' => $rating, 'reviews_count' => 1]);
         });
+    }
+
+    private function shoeImageUrl(int $seed): string
+    {
+        $photos = [
+            '1542291026-7eec264c27ff',
+            '1606107557195-0e29a4b5b4aa',
+            '1560769629-975ec94e6a86',
+            '1595950653106-6c9ebd614d3a',
+            '1525966222134-fcfa99b8ae77',
+            '1584735175315-9d5df23be7d0',
+            '1600185365926-3a2ce3cdb9eb',
+            '1491553895911-0055eca6402d',
+            '1518894781321-630e638d0742',
+            '1543163521-1bf539c55dd2',
+            '1581067721837-88ad7cf43ab7',
+            '1549298916-b41d501d3772',
+            '1551107696-a4b0c5a0d9a2',
+            '1539185441755-769473a23570',
+            '1460353581641-37baddab0fa2',
+            '1547592180-85f173990554',
+            '1556906781-9a412961a28c',
+            '1608231387042-66d1773070a5',
+            '1582588678413-dbf45f4823e9',
+            '1554735490-5974588cbc4a',
+        ];
+
+        return 'https://images.unsplash.com/photo-'.$photos[$seed % count($photos)].'?w=800&h=800&fit=crop&auto=format';
     }
 
     private function seedCoupons(): void

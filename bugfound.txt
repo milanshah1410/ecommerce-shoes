@@ -1,0 +1,128 @@
+frontend 
+🐛 Bugs Found (21 Issues)
+🔴 Critical
+Bug #1 — "Explore Collections" button has invisible text
+
+The second CTA button on the hero has white text on a white/gradient background — completely invisible.
+
+Bug #7 — Sort dropdown click navigates to product page
+
+Clicking the "Sort by" native <select> dropdown with mouse causes the underlying product card to receive the click, navigating to a product detail page instead of sorting. Sorting only works via keyboard/form_input. The dropdown is positioned over a product card or has pointer-events/z-index issue.
+
+Bug #12 — Men/Women nav links produce 0 results
+
+Navbar "Men" uses ?gender=male, navbar "Women" uses ?gender=female, but the sidebar filter radio buttons use men/women. The API only recognizes men/women, so both nav links return 0 products.
+
+Bug #13 — Sale nav link broken
+
+Navbar "Sale" uses ?sale=1 but the correct parameter is ?on_sale=1. Returns 0 results.
+
+
+🟠 Major
+Bug #2 — Wrong product images everywhere
+
+All product images show random stock photos (cityscapes, cyclists, cranes, birds) instead of shoe images. Affects the entire app.
+
+Bug #4 — Price range filter doesn't filter results
+
+Setting Min: 1000 / Max: 3000 still shows products priced at ₹3,509 and ₹4,499 — the filter has no effect.
+
+Bug #4b — Currency symbol mismatch in filter tags
+
+Filter tags display "$1000 / $3000" (dollar sign) while product prices throughout the app show ₹ (Indian Rupee).
+
+Bug #8 — Currency inconsistency on Product Detail page
+
+Product listing page shows "₹1,754.22" but the Product Detail page shows "$1754.22" — inconsistent currency symbol for the same product.
+
+Bug #9 — Submit Review silently redirects to login
+
+Clicking "Submit Review" while not logged in redirects to /login with no message explaining why, and briefly shows a blank white page.
+
+Bug #11 — Add to Cart / Wishlist silently redirect to login
+
+Both "Add to Cart" (from product cards and product detail) and the Wishlist ♥ button silently redirect to the login page with no explanatory message.
+
+Bug #16 — "Trending Shoes View All" uses invalid sort parameter
+
+Links to ?sort=trending which isn't a valid sort option. The Sort dropdown then shows blank/empty. Products still load (falls back) but no sort is active.
+
+Bug #20/21 — Privacy Policy & Terms of Service links broken
+
+Both footer links scroll the page to the top and navigate to / (home) instead of their respective pages.
+
+
+🟡 Moderate
+Bug #3 — Men/Women sidebar gender filter may return same products
+
+Men and Women sidebar filters both return 6 results showing the same 3 products on screen (products may be mis-tagged for both genders in data).
+
+Bug #6 — "Clear all filters" doesn't clear the sidebar search field value
+
+After typing in the sidebar search and clicking "Clear all filters", the search input field appears empty visually but the search filter persists in URL and results.
+
+Bug #10 — Dismissing validation modal resets Size selection
+
+When you select a size, then click Add to Cart without a color (gets color validation modal), clicking OK dismisses the modal but the previously selected size is reset/lost.
+
+Bug #14 — Global navbar search on Products page produces 0 results
+
+Searching from the navbar while already on /products page appends ?search=... to URL but retains previous filter state as active, resulting in 0 results. Only works correctly when searching from the home page.
+
+Bug #17 — Out-of-stock size button disappears on click
+
+A grayed-out size (e.g., "7" on Nike Air Zoom Pegasus) completely disappears from the DOM when clicked, instead of showing an "Out of Stock" message or staying visible as unselectable.
+
+Bug #18 — Featured Brands click does nothing
+
+Clicking a brand (e.g., Nike) on the homepage only applies a visual highlight border on the card but does not navigate to a filtered brand page.
+
+Bug #19 — Newsletter subscription has no feedback
+
+Submitting a valid email in the newsletter form just clears the input with no success toast, no error, and no confirmation — user gets zero feedback.
+
+
+🟢 Minor / UX
+Bug #5 — Sidebar search not live/real-time
+
+Sidebar search doesn't filter as you type; requires "Apply Filters" button. There's no hint/label indicating the button is required.
+
+Bug #15 — Sort applied but product order seems unchanged in some cases
+
+Visual verification needed; suspected the sort API works but on-screen order change is subtle or the frontend isn't re-rendering properly after sort change via the native dropdown.
+
+
+Summary
+SeverityCount🔴 Critical4🟠 Major8🟡 Moderate6🟢 Minor/UX3Total21
+The most impactful issues to fix first are: (1) the Men/Women/Sale nav links with wrong query parameters (renders those pages completely useless), (2) the Sort dropdown click-through bug, (3) the currency inconsistency, and (4) missing user feedback when login is required for cart/wishlist actions.
+
+========================================
+admin
+🐛 BUGS FOUND
+🔴 Critical
+
+Raw SQL errors exposed to users — When creating a coupon without required fields, the full SQL query, database name (ecommerce_shoes), host (127.0.0.1), port (3306), and table schema are displayed in an alert dialog. This is a critical security vulnerability.
+Orders API returns HTTP 500 — /api/admin/orders intermittently returns 500 errors, causing the Orders page to show "No records found" even when orders exist. The dashboard showed 1 order (# ORD-SWFCLOVNIX, ₹14,157.64 pending) which never appeared in the Orders list.
+Add Product broken — boolean fields not sent — When creating a product, the "Product Tags" checkboxes (Featured, Trending, New Arrival, Best Seller) don't submit boolean values correctly. The backend rejects the request with "The is featured field must be true or false. (and 3 more errors)", making it impossible to create a new product.
+
+🟠 High
+
+Movement Log not recording stock changes — After successfully adding 10 units via Stock In, the Movement Log shows "No movements recorded." Stock is updated but the audit trail is broken.
+Profile page loads with empty fields — When navigating to the Profile page, all fields (First Name, Last Name, Email, Mobile) are empty. The current user's data is not populated.
+Logout triggered by scrolling — During testing, scrolling on the Brands page triggered an unexpected logout. This points to an event propagation bug.
+Unintended navigation from modal actions — Clicking Cancel/Confirm buttons on modals sometimes navigates to a completely different section (e.g., confirming category deletion navigated to Brands, cancelling product edit navigated to Categories).
+
+🟡 Medium
+
+Dark mode toggle non-functional — Clicking the moon icon in the header does nothing; the theme never switches.
+Notifications bell non-functional — Clicking the bell icon (which shows a red badge indicating unread notifications) shows no dropdown or panel.
+Global search bar non-functional — Typing in the top search bar and pressing Enter yields no results and no navigation.
+User status toggle has no confirmation — Clicking the eye/toggle icon instantly blocks/unblocks a user without any "Are you sure?" prompt. This is dangerous as it can accidentally lock out customers.
+Create User form uses browser autofill email — The email field in the Create User modal was pre-populated with admin@shoehub.test from browser autofill, leading to the test user being created with testuser@example.com instead of the intended email.
+Coupon "Min Order Amount" is required but not marked — The field has no asterisk and no frontend validation, leading users to submit the form and receive a raw SQL error instead of a friendly message.
+Store Name defaults to "Laravel" — In Settings → General, the Store Name is pre-filled with "Laravel" (the backend framework name), suggesting settings were never initialized.
+Coupon count discrepancy — Dashboard showed Total Orders: 1 initially; after some interactions it dropped to 0, suggesting data inconsistency.
+
+
+📊 Test Summary
+SectionStatusLogin/Auth✅ Mostly working (1 bug)Dashboard✅ WorkingUsers⚠️ Working with UX bugsRoles✅ WorkingProducts🔴 Create brokenCategories✅ WorkingBrands✅ WorkingInventory⚠️ Stock In works, Movement Log brokenOrders🔴 API 500 errorsCoupons⚠️ Working but exposes SQL errorsCustomers✅ WorkingReviews✅ Page loads (no data)Settings✅ WorkingProfile⚠️ Empty fieldsGlobal UI (search, dark mode, notifications)🔴 All non-functional

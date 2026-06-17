@@ -22,7 +22,7 @@
                 <button @click="router.push({ name: 'products' })" class="btn-primary px-8 py-3 text-base font-semibold rounded-lg shadow-lg">
                   Shop Now
                 </button>
-                <button @click="router.push({ name: 'products', query: { gender: 'men' } })" class="btn-outline border-white text-white hover:bg-white hover:text-indigo-700 px-8 py-3 text-base font-semibold rounded-lg transition-colors">
+                <button @click="router.push({ name: 'products', query: { gender: 'men' } })" class="border-2 border-white text-white hover:bg-white hover:text-indigo-700 px-8 py-3 text-base font-semibold rounded-lg transition-colors inline-flex items-center justify-center gap-2">
                   Explore Collections
                 </button>
               </div>
@@ -40,7 +40,7 @@
       <!-- Trending Shoes -->
       <section v-if="data.trending?.length" class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeader title="Trending Shoes" link-label="View All" @view-all="router.push({ name: 'products', query: { sort: 'trending' } })" />
+          <SectionHeader title="Trending Shoes" link-label="View All" @view-all="router.push({ name: 'products', query: { trending: '1' } })" />
           <div class="mt-8 flex gap-6 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent snap-x snap-mandatory">
             <div
               v-for="product in data.trending.slice(0, 8)"
@@ -72,7 +72,7 @@
       <!-- Best Sellers -->
       <section v-if="data.best_sellers?.length" class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeader title="Best Sellers" link-label="View All" @view-all="router.push({ name: 'products', query: { sort: 'best_sellers' } })" />
+          <SectionHeader title="Best Sellers" link-label="View All" @view-all="router.push({ name: 'products', query: { sort: 'best_selling' } })" />
           <div class="mt-8 flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory">
             <div
               v-for="product in data.best_sellers.slice(0, 8)"
@@ -94,6 +94,7 @@
               v-for="brand in data.brands"
               :key="brand.id"
               class="card flex flex-col items-center justify-center p-4 rounded-xl border border-gray-200 hover:border-brand-600 hover:shadow-md transition-all cursor-pointer min-h-[96px]"
+              @click="router.push({ name: 'products', query: { brand: brand.slug } })"
             >
               <img v-if="brand.logo" :src="brand.logo" :alt="brand.name" class="h-12 w-auto object-contain mb-2" />
               <span class="text-sm font-semibold text-gray-700 text-center">{{ brand.name }}</span>
@@ -185,6 +186,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, defineComponent, h } from 'vue'
 import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { catalogApi } from '@/api/catalog'
 import ProductCard from '@/components/product/ProductCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
@@ -257,8 +259,12 @@ onMounted(async () => {
   }
 })
 
-function handleNewsletterSubmit() {
+async function handleNewsletterSubmit() {
   newsletterEmail.value = ''
-  alert('You have been subscribed! Keep an eye on your inbox for the latest updates.')
+  await Swal.fire({
+    toast: true, position: 'top-end', icon: 'success',
+    title: 'Subscribed! Check your inbox for updates.',
+    timer: 3000, showConfirmButton: false,
+  })
 }
 </script>
